@@ -23,7 +23,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const config=window.FORMAN_SUPABASE_CONFIG||{};
 const ready=Boolean(config.url&&config.anonKey&&!config.url.includes('YOUR_PROJECT')&&!config.anonKey.includes('YOUR_'));
 const client=ready?createClient(config.url,config.anonKey):null;
-const initial=[{name:'Forman Classmates',text:'Welcome! This is your space to reconnect, share a favorite memory, and catch up with old friends.',created_at:null}];
+const initial=[{name:'Forman Classmates',body:'Welcome! This is your space to reconnect, share a favorite memory, and catch up with old friends.',created_at:null}];
 const escapeHtml=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function toast(s){const t=document.querySelector('#toast');t.textContent=s;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400)}
 function formatDate(value){if(!value)return 'A note from the reunion host';const d=new Date(value);return d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'})}
