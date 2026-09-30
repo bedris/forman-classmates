@@ -63,13 +63,15 @@ Deno.serve(async (request) => {
     return json({ error: "Guestbook message is missing required fields" }, 400);
   }
 
-  const subject = "A new Forman ’77 post is waiting for approval";
+  // Keep the headline ASCII-only so email clients with incorrect MIME charset
+  // handling cannot turn the apostrophe into mojibake.
+  const subject = "A new Forman '77 post is waiting for approval";
   const approvalUrl = "https://supabase.com/dashboard/project/hewnomfymflkdutvqiap/editor/17598?schema=public";
   const safeName = escapeHtml(name);
   const preview = body.trim().slice(0, 240);
   const safePreview = escapeHtml(preview);
   const text = `A new post from ${name} is waiting for your approval.\n\n${preview}${body.length > preview.length ? "…" : ""}\n\nReview pending posts: ${approvalUrl}`;
-  const html = `<!doctype html><html><body><h2>A new Forman ’77 post is waiting for approval</h2><p><strong>${safeName}</strong> shared:</p><p>${safePreview}${body.length > preview.length ? "…" : ""}</p><p><a href="${approvalUrl}">Review pending posts</a></p></body></html>`;
+  const html = `<!doctype html><html><head><meta charset="utf-8"></head><body><h2>A new Forman '77 post is waiting for approval</h2><p><strong>${safeName}</strong> shared:</p><p>${safePreview}${body.length > preview.length ? "…" : ""}</p><p><a href="${approvalUrl}">Review pending posts</a></p></body></html>`;
 
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
