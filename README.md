@@ -12,7 +12,7 @@ A static reunion site for GitHub Pages with a Supabase powered shared guestbook.
 
 ## Add photo attachments
 
-For an existing project, first run [`supabase/photo-attachments.sql`](supabase/photo-attachments.sql) in the Supabase SQL Editor. It adds the optional photo path, creates a private `guestbook-photos` bucket limited to JPG, PNG, and WebP files up to 5 MB, and allows photo reads only when the linked message is published. New submissions can attach one photo; approving the message also makes its photo visible on the site. Photos are served with seven-day signed URLs, so a page left open longer than that may need a refresh to reload images.
+For an existing project, run [`supabase/photo-galleries.sql`](supabase/photo-galleries.sql) after the earlier [`supabase/photo-attachments.sql`](supabase/photo-attachments.sql) setup. The private `guestbook-photos` bucket accepts up to four JPG, PNG, or WebP files per message, each up to 5 MB. Photo reads are allowed only when the linked message is published. Photos are served with seven-day signed URLs, so a page left open longer than that may need a refresh to reload images.
 
 The database rules allow anyone to read approved notes and submit new pending notes. They do not allow visitors to publish, edit, or delete notes. The Supabase publishable/anon key is intended for the browser; the row-level security policies in `supabase/schema.sql` protect the table.
 
