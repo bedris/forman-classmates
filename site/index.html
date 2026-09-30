@@ -15,7 +15,7 @@
 <img class="class-banner" src="./assets/forman-class-photo-banner.jpg" alt="A wide panorama of Forman classmates from the 1970s">
 <main id="top"><section class="hero"><div class="wrap hero-grid"><div><div class="eyebrow">A place to find your people</div><h1>Good friends.<br><em>Great memories.</em></h1><p class="hero-copy">The years fly by, but the people who shared them stay with us. Reconnect with your Forman classmates, catch up, and add a memory to the conversation.</p><div class="actions"><a class="button" href="#memories">See class updates <span>↓</span></a><a class="button outline" href="#guestbook">Leave a message</a></div><div class="stats"><div class="stat"><strong>One big</strong><span>Class reunion</span></div><div class="stat"><strong>Many stories</strong><span>Still to share</span></div></div></div><div class="hero-art"><img class="class-photo" src="./assets/forman-yearbook.jpg" alt="A Forman yearbook spread with handwritten class notes and portraits of classmates" fetchpriority="high"></div></div></section>
 
-<section class="section" id="memories"><div class="wrap community"><div><div class="eyebrow">The class conversation</div><h2 style="font-size:34px;margin:8px 0 22px">Notes from old friends</h2><div class="messages" id="messages" aria-live="polite"></div></div><aside class="guestbook-panel" id="guestbook"><h3>Leave a little hello</h3><p>Share a favorite memory, a life update, or just say you stopped by.</p><form id="messageForm"><label for="name">Your name</label><input id="name" required maxlength="60" autocomplete="name" placeholder="First and last name"><label for="body">Your message</label><textarea id="body" required maxlength="500" placeholder="What have you been up to?"></textarea><label for="photo">Add a photo (optional)</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp" multiple><p class="upload-help">Up to 4 JPG, PNG, or WebP photos · 5 MB each. Photos stay private until the host approves the post.</p><div class="photo-preview" id="photoPreview" hidden><button class="remove-photo" id="removePhoto" type="button">Remove photos</button></div><button class="button submit" type="submit">Post your hello <span>↗</span></button></form><p class="note" id="formNote">New posts and photos stay private until approved. Once approved, they’ll be visible to anyone visiting this public site. Share only what you’re comfortable making public, and get permission before sharing someone else’s photo.</p></aside></div></section>
+<section class="section" id="memories"><div class="wrap community"><div><div class="eyebrow">The class conversation</div><h2 style="font-size:34px;margin:8px 0 22px">Notes from old friends</h2><div class="messages" id="messages" aria-live="polite"></div></div><aside class="guestbook-panel" id="guestbook"><h3>Leave a little hello</h3><p>Share a favorite memory, a life update, or just say you stopped by.</p><form id="messageForm"><label for="name">Your name</label><input id="name" required maxlength="60" autocomplete="name" placeholder="First and last name"><label for="body">Your message</label><textarea id="body" required maxlength="500" placeholder="What have you been up to?"></textarea><label for="photo">Add a photo (optional)</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp" multiple><p class="upload-help">Up to 4 JPG, PNG, or WebP photos · 5 MB each. Larger photos are resized before upload. Photos stay private until the host approves the post.</p><div class="photo-preview" id="photoPreview" hidden><button class="remove-photo" id="removePhoto" type="button">Remove photos</button></div><button class="button submit" type="submit">Post your hello <span>↗</span></button></form><p class="note" id="formNote">New posts and photos stay private until approved. Once approved, they’ll be visible to anyone visiting this public site. Share only what you’re comfortable making public, and get permission before sharing someone else’s photo.</p></aside></div></section>
 <section class="cta"><div class="wrap cta-inner"><div><h2>Have a classmate in mind?</h2><p>Send them this page and invite them to reconnect.</p></div><button class="button" id="share">Share this page <span>↗</span></button></div></section></main>
 <footer><div class="wrap foot"><span>© Forman Classmates · Made for reconnecting</span><span>Built around the memories we share.</span></div></footer><div class="toast" id="toast"></div>
 <script src="./config.js"></script>
@@ -30,7 +30,81 @@ function toast(s){const t=document.querySelector('#toast');t.textContent=s;t.cla
 function formatDate(value){if(!value)return 'A note from the reunion host';const d=new Date(value);return d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'})}
 function renderMessages(rows){const all=[...initial,...rows];document.querySelector('#messages').innerHTML=all.map(m=>{const photos=(m.photo_urls||[]).map((url,index)=>`<img class="message-photo" src="${escapeHtml(url)}" alt="Photo ${index+1} shared by ${escapeHtml(m.name)}" loading="lazy">`).join('');const gallery=photos?`<div class="message-photos">${photos}</div>`:'';return `<article class="message"><div class="message-head"><span class="author">${escapeHtml(m.name)}</span><span class="when">${formatDate(m.created_at)}</span></div><p>${escapeHtml(m.body)}</p>${gallery}<div class="message-foot">A hello from a Forman classmate</div></article>`}).join('')}
 async function loadMessages(){if(!client){renderMessages([]);return}const {data,error}=await client.from('guestbook_messages').select('id,name,body,created_at,photo_path,photo_paths').eq('status','published').order('created_at',{ascending:false});if(error){console.error(error);toast('Could not load the guestbook. Please try again later.');return}const messages=await Promise.all((data||[]).map(async message=>{const paths=[...(message.photo_path?[message.photo_path]:[]),...(message.photo_paths||[])];const photo_urls=await Promise.all(paths.map(async path=>{const {data:signed,error:photoError}=await client.storage.from(PHOTO_BUCKET).createSignedUrl(path,604800);if(photoError){console.error(photoError);return null}return signed.signedUrl}));return {...message,photo_urls:photo_urls.filter(Boolean)}}));renderMessages(messages)}
-const PHOTO_BUCKET='guestbook-photos';const MAX_PHOTO_BYTES=5*1024*1024;const MAX_PHOTOS=4;const PHOTO_TYPES={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'};const photoInput=document.querySelector('#photo');const photoPreview=document.querySelector('#photoPreview');const removePhotosButton=document.querySelector('#removePhoto');let selectedPhotos=[];let photoPreviewUrls=[];function clearPhotoPreview(){photoPreviewUrls.forEach(URL.revokeObjectURL);photoPreviewUrls=[];selectedPhotos=[];photoPreview.replaceChildren();photoPreview.hidden=true;removePhotosButton.hidden=true;photoInput.value=''}photoInput.addEventListener('change',()=>{const files=Array.from(photoInput.files||[]);clearPhotoPreview();if(files.length>MAX_PHOTOS){toast('Choose up to 4 photos per post.');return}if(files.some(file=>!PHOTO_TYPES[file.type])){toast('Choose JPG, PNG, or WebP photos.');return}if(files.some(file=>file.size>MAX_PHOTO_BYTES)){toast('Each photo must be smaller than 5 MB.');return}selectedPhotos=files;for(const file of files){const image=document.createElement('img');image.alt='Selected photo preview';const previewUrl=URL.createObjectURL(file);photoPreviewUrls.push(previewUrl);image.src=previewUrl;photoPreview.append(image)}photoPreview.hidden=files.length===0;removePhotosButton.hidden=files.length===0});removePhotosButton.addEventListener('click',clearPhotoPreview);const form=document.querySelector('#messageForm');const formNote=document.querySelector('#formNote');
+const PHOTO_BUCKET='guestbook-photos';
+const MAX_PHOTO_BYTES=5*1024*1024;
+const MAX_PHOTOS=4;
+const MAX_PHOTO_DIMENSION=2560;
+const PHOTO_TYPES={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'};
+const photoInput=document.querySelector('#photo');
+const photoPreview=document.querySelector('#photoPreview');
+const removePhotosButton=document.querySelector('#removePhoto');
+let selectedPhotos=[];
+let photoPreviewUrls=[];
+function clearPhotoPreview(){photoPreviewUrls.forEach(URL.revokeObjectURL);photoPreviewUrls=[];selectedPhotos=[];photoPreview.replaceChildren();photoPreview.hidden=true;removePhotosButton.hidden=true;photoInput.value=''}
+function loadImage(file){return new Promise((resolve,reject)=>{const url=URL.createObjectURL(file);const image=new Image();image.onload=()=>resolve({image,url});image.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('photo-read'))};image.src=url})}
+function canvasBlob(canvas,type,quality){return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('photo-resize')),type,quality))}
+async function preparePhoto(file){
+  if(file.size<=MAX_PHOTO_BYTES)return {file,resized:false};
+  const {image,url}=await loadImage(file);
+  try{
+    const originalName=file.name.replace(/\.[^.]+$/,'')||'photo';
+    for(const scale of [1,.82,.67,.55,.45]){
+      const factor=Math.min(scale,MAX_PHOTO_DIMENSION/Math.max(image.naturalWidth,image.naturalHeight));
+      const canvas=document.createElement('canvas');
+      canvas.width=Math.max(1,Math.round(image.naturalWidth*factor));
+      canvas.height=Math.max(1,Math.round(image.naturalHeight*factor));
+      const context=canvas.getContext('2d');
+      if(!context)throw new Error('photo-resize');
+      context.fillStyle='#fff';
+      context.fillRect(0,0,canvas.width,canvas.height);
+      context.drawImage(image,0,0,canvas.width,canvas.height);
+      for(const quality of [.88,.78,.68,.58,.48]){
+        const blob=await canvasBlob(canvas,'image/jpeg',quality);
+        if(blob.size<=MAX_PHOTO_BYTES){
+          return {file:new File([blob],`${originalName}.jpg`,{type:'image/jpeg',lastModified:file.lastModified}),resized:true};
+        }
+      }
+    }
+    throw new Error('photo-too-large');
+  }finally{URL.revokeObjectURL(url)}
+}
+photoInput.addEventListener('change',async()=>{
+  const files=Array.from(photoInput.files||[]);
+  clearPhotoPreview();
+  if(files.length>MAX_PHOTOS){toast('Choose up to 4 photos per post.');return}
+  if(files.some(file=>!PHOTO_TYPES[file.type])){toast('Choose JPG, PNG, or WebP photos.');return}
+  const submitButton=document.querySelector('#messageForm button[type=submit]');
+  submitButton.disabled=true;
+  try{
+    const prepared=[];
+    let resizedCount=0;
+    for(const file of files){
+      if(file.size>MAX_PHOTO_BYTES)toast('Resizing large photos…');
+      const result=await preparePhoto(file);
+      prepared.push(result.file);
+      if(result.resized)resizedCount++;
+    }
+    selectedPhotos=prepared;
+    for(const file of selectedPhotos){
+      const image=document.createElement('img');
+      image.alt='Selected photo preview';
+      const previewUrl=URL.createObjectURL(file);
+      photoPreviewUrls.push(previewUrl);
+      image.src=previewUrl;
+      photoPreview.append(image);
+    }
+    photoPreview.hidden=selectedPhotos.length===0;
+    removePhotosButton.hidden=selectedPhotos.length===0;
+    if(resizedCount)toast(`${resizedCount} large photo${resizedCount===1?'':'s'} resized for upload.`);
+  }catch(error){
+    clearPhotoPreview();
+    toast(error.message==='photo-too-large'?'A photo could not be reduced below 5 MB. Please choose a smaller image.':'A photo could not be resized. Try a JPG, PNG, or WebP image.');
+  }finally{
+    submitButton.disabled=false;
+  }
+});
+removePhotosButton.addEventListener('click',clearPhotoPreview);
+const form=document.querySelector('#messageForm');const formNote=document.querySelector('#formNote');
 if(!ready){form.querySelector('button').disabled=true;form.querySelector('button').style.opacity='.55';formNote.textContent='Guestbook setup is not finished yet. The reunion host needs to connect the shared database.'}
 form.addEventListener('submit',async e=>{e.preventDefault();if(!client){toast('The shared guestbook is not connected yet.');return}const name=document.querySelector('#name').value.trim();const body=document.querySelector('#body').value.trim();const photos=[...selectedPhotos];if(!name||!body)return;if(photos.length>MAX_PHOTOS||photos.some(photo=>!PHOTO_TYPES[photo.type]||photo.size>MAX_PHOTO_BYTES)){toast('Choose up to 4 JPG, PNG, or WebP photos smaller than 5 MB each.');return}const button=form.querySelector('button[type=submit]');button.disabled=true;try{const photoPaths=[];for(const photo of photos){const extension=PHOTO_TYPES[photo.type];const unique=globalThis.crypto?.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(16).slice(2)}`;const photoPath=`${unique}.${extension}`;const {error:uploadError}=await client.storage.from(PHOTO_BUCKET).upload(photoPath,photo,{contentType:photo.type,upsert:false});if(uploadError)throw new Error('photo-upload');photoPaths.push(photoPath)}const {error}=await client.from('guestbook_messages').insert({name,body,photo_paths:photoPaths});if(error)throw error;form.reset();clearPhotoPreview();toast('Thanks! Your hello is waiting for host approval.')}catch(error){console.error(error);toast(error.message==='photo-upload'?'One or more photos could not be uploaded. Please try again.':'Could not post your hello. Please try again.')}finally{button.disabled=false}});
 if(client){client.channel('published-guestbook').on('postgres_changes',{event:'*',schema:'public',table:'guestbook_messages',filter:'status=eq.published'},loadMessages).subscribe()}
