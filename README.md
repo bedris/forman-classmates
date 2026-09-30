@@ -10,6 +10,10 @@ A static reunion site for GitHub Pages with a Supabase powered shared guestbook.
 4. Put those two public values in [`site/config.js`](site/config.js). Do not use a `service_role` key here.
 5. To approve a note, open Table Editor → `guestbook_messages` and change its `status` from `pending` to `published`. To remove a note, delete its row.
 
+## Add photo attachments
+
+For an existing project, first run [`supabase/photo-attachments.sql`](supabase/photo-attachments.sql) in the Supabase SQL Editor. It adds the optional photo path, creates a private `guestbook-photos` bucket limited to JPG, PNG, and WebP files up to 5 MB, and allows photo reads only when the linked message is published. New submissions can attach one photo; approving the message also makes its photo visible on the site. Photos are served with seven-day signed URLs, so a page left open longer than that may need a refresh to reload images.
+
 The database rules allow anyone to read approved notes and submit new pending notes. They do not allow visitors to publish, edit, or delete notes. The Supabase publishable/anon key is intended for the browser; the row-level security policies in `supabase/schema.sql` protect the table.
 
 ## Publish with GitHub Pages
