@@ -1,0 +1,2 @@
+[functions.notify-pending-post]
+verify_jwt = false

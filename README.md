@@ -16,6 +16,17 @@ For an existing project, run [`supabase/photo-galleries.sql`](supabase/photo-gal
 
 The database rules allow anyone to read approved notes and submit new pending notes. They do not allow visitors to publish, edit, or delete notes. The Supabase publishable/anon key is intended for the browser; the row-level security policies in `supabase/schema.sql` protect the table.
 
+## Email alerts for pending posts
+
+The `supabase/functions/notify-pending-post` Edge Function emails the host when a new guestbook post is submitted. It ignores non-pending records, checks a shared webhook secret, and sends through Resend. Configure the function and database webhook in the Supabase Dashboard:
+
+1. Create a Resend account and API key, and choose a sender permitted by that account. Resend's shared `onboarding@resend.dev` sender is test-only and may be limited to the account's own verified recipient; otherwise, verify a domain you control and use a sender on that domain.
+2. In Supabase → Edge Functions, create `notify-pending-post` from `supabase/functions/notify-pending-post/index.ts` and turn off JWT verification for the function. The handler validates its own random webhook secret.
+3. In Supabase → Edge Function Secrets, set `RESEND_API_KEY`, `RESEND_FROM`, `NOTIFICATION_EMAIL`, and `PENDING_POST_WEBHOOK_SECRET`. Set `NOTIFICATION_EMAIL` to the host's email address and generate a long random value for the webhook secret.
+4. In Supabase → Database Webhooks, add an `INSERT` webhook for `public.guestbook_messages` pointing to the `notify-pending-post` function. Add the HTTP header `x-pending-post-secret` with the same value as `PENDING_POST_WEBHOOK_SECRET`.
+
+The notification email includes the author's name, a short message preview, and a link to the table editor. Keep all email and webhook secrets in Supabase Function Secrets and the Dashboard webhook configuration; do not commit them to GitHub or put them in `site/config.js`.
+
 ## Publish with GitHub Pages
 
 1. Push this repository to GitHub, on a branch named `main`.
